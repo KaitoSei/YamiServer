@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-from app import db, app
+from app import app,db
 from app.users import constants as USER
 from collections import Counter
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 from passlib.apps import custom_app_context as pwd_context
 
-
 class User(db.Model):
     __tablename__ = '_user'
-    UserName = db.Column(db.String(20), primary_key=True)
-    Password = db.Column(db.String(128))
+    UserName = db.Column(db.String(20),primary_key = True)
+    Password = db.Column(db.String(256))
     HeadImage = db.Column(db.String(200))
     Email = db.Column(db.String(20))
     EmailVerified = db.Column(db.Boolean)
@@ -20,12 +19,11 @@ class User(db.Model):
     Birthday = db.Column(db.Date)
     Sentence = db.Column(db.String(140))
     NickName = db.Column(db.String(20))
-
-    def __init__(self, UserName, Password, Email
-                 , EmailVerified, MobilePhoneNumber, MobilePhoneVerified
-                 , Hometown, Gender, Birthday, Sentence, NickName, HeadImage=''):
+    def __init__(self,UserName,Password,HeadImage,Email
+                 ,EmailVerified,MobilePhoneNumber,MobilePhoneVerified
+                 ,Hometown,Gender,Birthday,Sentence,NickName):
         self.UserName = UserName
-        self.Password = pwd_context.encrypt(Password)
+        self.Password = Password
         self.HeadImage = HeadImage
         self.Email = Email
         self.EmailVerified = EmailVerified
@@ -37,17 +35,28 @@ class User(db.Model):
         self.Sentence = Sentence
         self.NickName = NickName
 
-    def hash_password(self, password):
-        self.Password = pwd_context.encrypt(password)
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+
+class Admin(db.Model):
+    __tablename_  = "_admin"
+    AdminName = db.Column(db.String(20),primary_key = True)
+    Password = db.Column(db.String(256))
+
+    def __init__(self, AdminName,Password):
+        self.AdminName = AdminName
+        self.Password = Password
 
     def save(self):
         db.session.add(self)
         db.session.commit()
 
-    def generate_auth_token(self, expiration=600):
+    def generate_auth_token(self,expiration = 600):
         # create a token
-        s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.UserName})
+        s = Serializer(app.config['SECRET_KEY'],expires_in = expiration)
+        return s.dumps({'id':self.AdminName})
 
     @staticmethod
     def verify_auth_token(token):
@@ -59,19 +68,11 @@ class User(db.Model):
             # valid token, but expired
 
         except BadSignature:
-            # invalid token
             return 'Signature Error!'
+            # invalid token
 
-        user = User.query.filter(User.UserName == data['id']).first()
-        return user
+        admin = Admin.query.filter(Admin.AdminName == data['id']).first()
+        return admin
 
     def verify_password(self, password):
-        return pwd_context.verify(password, self.Password)
-
-    def change_password(self,old,new):
-        if pwd_context.verify(old, self.Password):
-            self.Password=pwd_context.encrypt(new)
-            self.save()
-            return True
-        else:
-            return False
+        return password==self.Password

@@ -5,7 +5,6 @@ from flask import Flask, g, render_template, send_from_directory, session, reque
 import os
 import os.path
 
-from flask_httpauth import HTTPBasicAuth
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import redirect
 
@@ -33,12 +32,12 @@ app.register_blueprint(favorite_dishesModule,url_prefix='/favorite_dishes')
 app.register_blueprint(like_dishesModule,url_prefix='/like_dishes')
 app.register_blueprint(ym_dish_commentsModule,url_prefix='/ym_dish_comments')
 app.register_blueprint(ym_dishesModule,url_prefix='/ym_dishes')
-
-
-
-
-auth = HTTPBasicAuth()
-
+from app.users.models import User
+from app.ym_dishes.models import YMDish
+from app.favorite_dishes.models import FavoriteDish
+from app.like_dishes.models import LikeDish
+from app.ym_dish_comments.models import YMDishComment
+db.create_all()
 
 
 # *****************
@@ -52,7 +51,8 @@ def favicon():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html')
+    print request.values
+    return render_template('404.html'), 404
 
 
 @app.route("/")
